@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototipo MVP - FlotaTrans S.A.</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#ddd;color:#111;padding-top:env(safe-area-inset-top,0px)}
+header{background:#333;color:#eee;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:12px}
+header select{width:auto;margin:0;padding:4px}
+.wrap{display:flex;min-height:calc(100vh - 44px)}
+aside{width:270px;background:#f2f2f2;border-right:1px solid #bbb;overflow:auto;padding:8px;max-height:100vh;position:sticky;top:0}
+.sp{font-weight:bold;margin:14px 4px 4px;font-size:13px;color:#444}
+.sp small{font-weight:normal;color:#666}
+aside button{display:block;width:100%;text-align:left;background:none;color:#111;border:0;padding:6px 8px;cursor:pointer;font-size:13px;border-radius:4px;margin:1px 0}
+aside button.on{background:#444;color:#fff}
+aside button.on i{color:#ddd}
+aside i{font-style:normal;color:#888;font-size:11px;float:right}
+main{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:24px;overflow:auto}
+.phone{width:360px;height:700px;background:#fff;border:10px solid #222;border-radius:38px;position:relative;overflow:hidden}
+.notch{width:120px;height:22px;background:#222;border-radius:0 0 14px 14px;margin:0 auto}
+.scr{padding:14px;height:calc(100% - 22px);overflow:auto;font-size:14px}
+.browser{width:min(900px,100%);background:#fff;border:1px solid #888;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px #0003}
+.bar{background:#ccc;padding:8px 12px;font-size:12px;color:#444}
+.page{padding:18px;min-height:520px}
+h2{margin:4px 0 10px;font-size:20px}
+h3{margin:4px 0 10px;font-size:17px}
+h4{margin:16px 0 6px;font-size:14px}
+input,select,textarea{display:block;width:100%;margin:6px 0;padding:8px;border:1px solid #888;border-radius:4px;font-size:14px;font-family:inherit;background:#fff}
+textarea{height:80px}
+button{background:#333;color:#fff;border:0;padding:9px 12px;border-radius:4px;cursor:pointer;margin:4px 2px;font-size:14px}
+button.ghost{background:#fff;color:#333;border:1px solid #333}
+button.big{display:block;width:100%;padding:22px;font-size:18px;margin:10px 0}
+.msg{font-size:13px;background:#eee;padding:6px 8px;border-radius:4px;min-height:1.2em;margin:8px 0}
+.sm{font-size:12px;color:#666}
+.box{border:1px dashed #666;padding:8px;font-size:13px;margin:6px 0;background:#f7f7f7}
+.alert{border:3px solid #111;background:#ddd;padding:10px;margin:10px 0;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+td,th{border-bottom:1px solid #ccc;padding:6px;text-align:left;vertical-align:middle}
+tr.al td{background:#ccc;font-weight:bold}
+tr.nosig td{color:#777;font-style:italic}
+tr.crit td{color:#555;text-decoration:line-through}
+td.on{background:#333;color:#fff;font-weight:bold}
+.chat{height:300px;overflow:auto;border:1px solid #bbb;padding:8px;background:#f7f7f7;margin:8px 0}
+.me{text-align:right;margin:6px 0;background:#ddd;padding:6px 8px;border-radius:8px;margin-left:40px}
+.bot{margin:6px 30px 6px 0;background:#fff;border:1px solid #bbb;padding:6px 8px;border-radius:8px}
+.chips button{font-size:12px;text-align:left;display:block;width:100%;margin:3px 0}
+.li{border-bottom:1px solid #ddd;padding:8px 0;font-size:13px}
+.kpi{display:inline-block;border:1px solid #888;padding:10px;margin:4px;min-width:120px;font-size:13px}
+.kpi b{display:block;font-size:20px}
+.bat{display:inline-block;width:60px;height:10px;border:1px solid #333;vertical-align:middle;margin-right:4px}
+.bat span{display:block;height:100%;background:#555}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const S={mod:'login',lang:'es',msg:'',failed:0,locked:false,role:'',offline:false,photo:false,pending:[],v5:'driver',buf:10,
+chat:[{f:'b',t:'Hola. ¿En qué le ayudo sobre protocolos operativos?'}],
+reports:[{id:'R-000',unit:'#107',cat:'Batería',desc:'Baja autonomía reportada',st:'Abierto',prio:'',t:'08:10'}],
+units:[{id:'#101',bat:86,temp:34,km:12450,st:'ok'},{id:'#104',bat:71,temp:38,km:48210,st:'ok'},{id:'#107',bat:44,temp:33,km:90322,st:'ok'},{id:'#112',bat:92,temp:31,km:5110,st:'ok'}]};
+
+const T={
+es:{login:'Iniciar sesión',user:'Usuario o correo corporativo',pass:'Contraseña',enter:'Iniciar sesión',report:'Reportar incidencia',desc:'Descripción del problema',send:'Enviar',sync:'Sincronizar',chat:'Asistente virtual',home:'Inicio',orders:'Órdenes'},
+en:{login:'Sign in',user:'User or corporate email',pass:'Password',enter:'Sign in',report:'Report incident',desc:'Problem description',send:'Send',sync:'Sync',chat:'AI assistant',home:'Home',orders:'Orders'}
+};
+const t=k=>T[S.lang][k];
+const $=id=>document.getElementById(id);
+const now=()=>new Date().toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
+const LBL={ok:'Operativa',al:'Alerta alta',nosig:'Sin señal / Revisar sensor',crit:'En taller / Deshabilitada'};
+
+function show(id){S.mod=id;S.msg='';app();}
+function setRole(r){S.role=r;S.msg='Sesión activa · Rol: '+r;app();}
+
+/* ---------- Sprint 1 ---------- */
+function vLogin(){
+ return `<h3>${t('login')}</h3>
+ <input id="u" placeholder="${t('user')}"><input id="p" type="password" placeholder="${t('pass')}">
+ <button onclick="doLogin()">${t('enter')}</button>
+ <div class="msg">${S.msg}</div>
+ <p class="sm">Intentos fallidos: ${S.failed}/3 · Pruebe: usuario "conductor1" o "tecnico1" o "supervisor1", contraseña "demo"</p>`;
+}
+function doLogin(){
+ const u=$('u').value.trim(), p=$('p').value;
+ if(S.locked){S.msg='Cuenta bloqueada 15 minutos. Aviso enviado a correo y administrador de seguridad.';return app();}
+ if(!u||!p){S.msg='Los campos son obligatorios.';return app();}
+ if(p!=='demo'){
+  S.failed++;
+  S.msg=S.failed>=3?(S.locked=true,'Cuenta bloqueada 15 minutos (CU-06, flujo 4b).'):'Usuario o contraseña incorrectos.';
+  return app();
+ }
+ S.failed=0;
+ const low=u.toLowerCase();
+ S.role=low.includes('sup')?'Supervisor':low.includes('tec')?'Técnico':'Conductor';
+ S.msg='Sesión iniciada · Rol: '+S.role+' · Token cifrado · Evento registrado en bitácora';
+ app();
+}
+function vRoleWeb(){
+ const P={'Conductor':[1,1,0,0,0],'Técnico':[1,1,1,0,0],'Supervisor':[1,1,1,1,1]};
+ const F=['Reportar incidencia','Asistente IA','Órdenes de mantenimiento','Monitoreo y alertas','Motor de riesgo'];
+ const head='<tr><th>Módulo</th>'+Object.keys(P).map(r=>`<th>${r}</th>`).join('')+'</tr>';
+ const rows=F.map((f,i)=>`<tr><td>${f}</td>${Object.keys(P).map(r=>`<td class="${S.role===r?'on':''}">${P[r][i]?'Sí':'No'}</td>`).join('')}</tr>`).join('');
+ return `<h2>Acceso por rol (web)</h2>
+ <div class="row">${Object.keys(P).map(r=>`<button class="ghost" onclick="setRole('${r}')">Entrar como ${r}</button>`).join('')}</div>
+ <div class="msg">${S.msg||'Seleccione un rol o inicie sesión.'}</div>
+ <div style="display:flex;gap:16px"><div style="flex:1"><input id="u" placeholder="${t('user')}"><input id="p" type="password" placeholder="${t('pass')}"><button onclick="doLogin()">${t('enter')}</button><p class="sm">Bloqueo tras 3 intentos fallidos · Sesión web: 30 min de inactividad</p></div>
+ <div style="flex:1"><h4>Matriz de permisos (lectura/escritura)</h4><table>${head}${rows}</table></div></div>`;
+}
+
+/* ---------- Sprint 2 ---------- */
+function vReport(){
+ return `<h3>${t('report')}</h3>
+ <select id="cat"><option>Mecánica</option><option>Eléctrica</option><option>Batería</option><option>Imprevisto</option></select>
+ <textarea id="desc" placeholder="${t('desc')}"></textarea>
+ <button class="ghost" onclick="togPhoto()">${S.photo?'[Foto adjunta]':'Adjuntar foto'}</button>
+ <div class="box">GPS: 9.9341, -84.0877 · precisión 5 m (obtenido automáticamente)<br>Kilometraje: 48.210 km · Unidad #104</div>
+ <label><input type="checkbox" ${S.offline?'checked':''} onchange="togOff()" style="width:auto;display:inline"> Modo sin conexión</label>
+ <button onclick="sendRep()">${t('send')}</button>
+ <div class="msg">${S.msg}</div>`;
+}
+function togOff(){S.offline=!S.offline;S.msg='';app();}
+function togPhoto(){S.photo=!S.photo;app();}
+function sendRep(){
+ const cat=$('cat').value, desc=$('desc').value.trim();
+ if(!desc){S.msg='La descripción es obligatoria.';return app();}
+ if(!S.photo && !confirm('¿Enviar el reporte sin evidencia fotográfica?'))return;
+ const r={id:'R-'+String(S.reports.length+S.pending.length+1).padStart(3,'0'),unit:'#104',cat,desc,st:'Abierto',prio:'',t:now()};
+ if(S.offline){S.pending.push(r);S.msg='Guardado localmente. Se enviará automáticamente al recuperar señal.';}
+ else{S.reports.push(r);S.msg='Reporte enviado. Notificación enviada al supervisor.';}
+ S.photo=false;app();
+}
+function vSync(){
+ const pend=S.pending.map(r=>`<div class="li">${r.id} · ${r.cat} · Creado ${r.t} · <b>Pendiente</b></div>`).join('')||'<div class="li">Sin registros pendientes</div>';
+ const sent=S.reports.filter(r=>r.sent).map(r=>`<div class="li">${r.id} · Creado ${r.t} · Enviado ${r.sent} · Sincronizado</div>`).join('')||'<div class="li sm">Sin sincronizaciones todavía</div>';
+ return `<h3>Sincronización offline</h3>
+ <div class="box">Conexión: <b>${S.offline?'Sin red':'En línea'}</b></div>
+ <button class="ghost" onclick="togOff()">${S.offline?'Restablecer conexión':'Simular corte de red'}</button>
+ <button onclick="syncNow()">${t('sync')}</button>
+ <div class="msg">${S.msg}</div>
+ <h4>Cola local</h4>${pend}
+ <h4>Registros sincronizados (RN-03: se conserva la hora de creación)</h4>${sent}`;
+}
+function syncNow(){
+ if(!S.pending.length){S.msg='No hay registros pendientes.';return app();}
+ S.offline=false;
+ S.pending.forEach(r=>{r.st='Sincronizado';r.sent=now();S.reports.push(r);});
+ S.msg=S.pending.length+' registro(s) sincronizado(s).';S.pending=[];app();
+}
+
+/* ---------- Sprint 3 ---------- */
+function vOrders(){
+ const rows=S.reports.map((r,i)=>`<tr><td>${r.id}</td><td>${r.unit}</td><td>${r.cat}</td><td>${r.desc}</td><td>${r.st}</td>
+ <td><select onchange="S.reports[${i}].prio=this.value" style="margin:0">${['','Baja','Media','Alta','Crítica'].map(o=>`<option ${r.prio===o?'selected':''}>${o}</option>`).join('')}</select></td>
+ <td><button onclick="ord(${i})">Generar orden</button><button class="ghost" onclick="disc(${i})">Descartar</button></td></tr>`).join('');
+ return `<h2>Gestión de reportes y órdenes de mantenimiento</h2>
+ <div class="msg">${S.msg||'Asigne prioridad y genere la orden de trabajo.'}</div>
+ <table><tr><th>ID</th><th>Unidad</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Prioridad</th><th>Acción</th></tr>${rows}</table>`;
+}
+function ord(i){
+ const r=S.reports[i];
+ if(!r.prio){S.msg='Asigne una prioridad antes de generar la orden.';return app();}
+ r.st='En orden ('+r.prio+')';
+ if(r.prio==='Crítica'){const u=S.units.find(x=>x.id===r.unit);if(u)u.st='crit';S.msg=r.unit+' deshabilitada para asignación de rutas (RN-04).';}
+ else S.msg='Orden creada. Alerta enviada al técnico asignado.';
+ app();
+}
+function disc(i){
+ const j=prompt('Justificación del descarte (obligatoria)');
+ if(j){S.reports[i].st='Descartado';S.reports[i].j=j;S.msg='Reporte descartado con justificación.';app();}
+}
+function vMonitor(){
+ const rows=S.units.map(u=>`<tr class="${u.st}"><td>${u.id}</td><td><span class="bat"><span style="width:${u.bat}%"></span></span>${u.bat}%</td><td>${u.temp} °C</td><td>${u.km.toLocaleString('es-CR')}</td><td>${LBL[u.st]}</td></tr>`).join('');
+ const al=S.units.filter(u=>u.st==='al').map(u=>`<div class="alert">ALERTA ALTA · ${u.id} · temperatura de batería anómala (${u.temp} °C)<br>Aviso visual y sonoro · Notificación simulada en 2 s (RN-05: máximo 5 s)<br><button onclick="act('${u.id}','crit')">Enviar a taller</button><button class="ghost" onclick="act('${u.id}','ok')">Marcar resuelta</button></div>`).join('');
+ return `<h2>Monitoreo IoT en tiempo real</h2>
+ <div class="box">Mapa de control (simulado): #101 Ruta 1 · #104 Ruta 2 · #107 Taller · #112 Ruta 4</div>
+ <button onclick="anom()">Simular anomalía en #104</button>
+ <button class="ghost" onclick="sig()">Simular pérdida de señal #107</button>
+ <button class="ghost" onclick="rst()">Restablecer</button>
+ ${al}
+ <table><tr><th>Unidad</th><th>Batería</th><th>Temperatura</th><th>Kilometraje</th><th>Estado</th></tr>${rows}</table>
+ <p class="sm">Sin transmisión por más de 10 minutos: "Sin señal / Revisar sensor".</p>`;
+}
+function anom(){const u=S.units.find(x=>x.id==='#104');u.temp=54;u.st='al';app();}
+function sig(){S.units.find(x=>x.id==='#107').st='nosig';app();}
+function rst(){S.units.forEach(u=>u.st=u.st==='crit'?'crit':'ok');S.units.find(x=>x.id==='#104').temp=38;app();}
+function act(id,st){S.units.find(x=>x.id===id).st=st;app();}
+
+/* ---------- Sprint 4 ---------- */
+function vChat(){
+ const msgs=S.chat.map(m=>`<div class="${m.f==='u'?'me':'bot'}">${m.t}</div>`).join('');
+ return `<h3>${t('chat')}</h3>
+ <div class="chat">${msgs}</div>
+ <div class="chips">
+  <button class="ghost" onclick="ask('¿Qué hacer si la batería muestra alerta de temperatura?')">¿Qué hacer si la batería muestra alerta de temperatura?</button>
+  <button class="ghost" onclick="ask('Autonomía baja')">Autonomía baja</button>
+  <button class="ghost" onclick="ask('Código de falla')">Código de falla</button>
+ </div>
+ <input id="q" placeholder="Escriba su consulta">
+ <button onclick="ask($('q').value)">${t('send')}</button>`;
+}
+function ask(q){
+ q=(q||'').trim();if(!q)return;
+ S.chat.push({f:'u',t:q});
+ const k=q.toLowerCase(); let a;
+ if(k.includes('temperatura'))a='1. Reduzca la carga. 2. Estacione en zona segura. 3. Verifique la alerta en el panel. 4. Si persiste, reporte la falla y contacte al supervisor. <span class="sm">Fuente: protocolo autorizado</span>';
+ else if(k.includes('autonom'))a='Verifique el nivel de carga, evite aceleraciones bruscas y reporte si la autonomía es menor a la esperada. <span class="sm">Fuente: manual de operación</span>';
+ else if(k.includes('código')||k.includes('codigo'))a='Consulte el manual de códigos de la unidad. Si el código no aparece, contacte al supervisor de turno.';
+ else a='No comprendo la consulta. Pruebe con una pregunta similar o contacte al supervisor de turno.';
+ S.chat.push({f:'b',t:a});app();
+}
+function vRisk(){
+ const rows=S.units.map(u=>{
+  const n=S.reports.filter(r=>r.unit===u.id).length;
+  const sc=(u.temp>45?2:u.temp>38?1:0)+(u.bat<50?1:0)+(u.km>80000?1:0)+(n>0?1:0);
+  const lv=sc>=2?'Alto':sc===1?'Medio':'Bajo';
+  const rec=lv==='Alto'?'Programar revisión de batería en taller':lv==='Medio'?'Vigilar temperatura y autonomía':'Sin acción';
+  return `<tr><td>${u.id}</td><td>${sc}</td><td><b>${lv}</b></td><td>${rec}</td></tr>`;
+ }).join('');
+ return `<h2>Motor de recomendaciones y riesgo (IA)</h2>
+ <p class="sm">Entradas: temperatura, estado de batería, kilometraje e historial de fallas (RD01). Prototipo con reglas simuladas. Los valores se actualizan al simular anomalías en el monitoreo.</p>
+ <table><tr><th>Unidad</th><th>Puntaje</th><th>Riesgo</th><th>Recomendación</th></tr>${rows}</table>`;
+}
+
+/* ---------- Sprint 5 ---------- */
+function vI18n(){
+ const big=S.v5==='driver';
+ const btns=big
+  ?`<button class="big" onclick="show('report')">${t('report')}</button><button class="big" onclick="show('chat')">${t('chat')}</button><button class="big" onclick="show('sync')">${t('sync')}</button>`
+  :`<div class="li"><button class="ghost" onclick="show('report')">${t('report')}</button> <button class="ghost" onclick="show('chat')">${t('chat')}</button> <button class="ghost" onclick="show('sync')">${t('sync')}</button></div>`;
+ return `<h3>${t('home')}</h3>
+ <select onchange="S.lang=this.value;app()"><option value="es" ${S.lang==='es'?'selected':''}>Español</option><option value="en" ${S.lang==='en'?'selected':''}>English</option></select>
+ <select onchange="S.v5=this.value;app()"><option value="driver" ${big?'selected':''}>Conductor (alta legibilidad)</option><option value="tech" ${big?'':'selected'}>Técnico (vista compacta)</option></select>
+ <div class="box">Vista del perfil: <b>${big?'Conductor en cabina':'Técnico en taller'}</b></div>
+ ${btns}
+ <h4>Vista del supervisor (web)</h4>
+ <div><span class="kpi">Disponibles<b>3 / 4</b></span><span class="kpi">Alertas<b>${S.units.filter(u=>u.st==='al').length}</b></span><span class="kpi">Órdenes<b>${S.reports.filter(r=>r.st.startsWith('En')).length}</b></span></div>
+ <p class="sm">Pendiente de diccionario: otros idiomas requeridos por el personal.</p>`;
+}
+
+/* ---------- Sprint 6 ---------- */
+function vUat(){
+ const items=['Reporte con foto en ruta (conductor)','Sincronización tras corte de red','Orden crítica deshabilita la unidad','Alerta de IA visible en menos de 5 s','Acceso por rol y bloqueo de cuenta','Interfaz en español e inglés'];
+ return `<h2>Sprint 6 · Holgura, UAT y salida a producción</h2>
+ <p>Reserva disponible: <b>${S.buf}</b> días hábiles (criterio de uso pendiente de autorización)</p>
+ <button class="ghost" onclick="S.buf=Math.max(0,S.buf-1);app()">Consumir 1 día de reserva</button>
+ <button class="ghost" onclick="S.buf=10;app()">Restablecer reserva</button>
+ <h4>Checklist de aceptación de usuario (UAT)</h4>
+ ${items.map(i=>`<label style="display:block;margin:6px 0"><input type="checkbox" style="width:auto;display:inline"> ${i}</label>`).join('')}
+ <h4>Cierre de producción</h4>
+ <p class="sm">Optimización de consultas · Pruebas de carga de sensores · Paquetes de instalación · Respaldos y plan de reversión</p>`;
+}
+
+/* ---------- Catálogo ---------- */
+const MODS=[
+{id:'login',s:1,t:'m',n:['Inicio de sesión (móvil)','Sign-in (mobile)'],f:vLogin},
+{id:'loginw',s:1,t:'w',n:['Acceso por rol (web)','Role access (web)'],f:vRoleWeb},
+{id:'report',s:2,t:'m',n:['Reporte de incidencia','Incident report'],f:vReport},
+{id:'sync',s:2,t:'m',n:['Sincronización offline','Offline sync'],f:vSync},
+{id:'orders',s:3,t:'w',n:['Órdenes de mantenimiento','Maintenance orders'],f:vOrders},
+{id:'monitor',s:3,t:'w',n:['Monitoreo IoT y alertas','IoT monitoring & alerts'],f:vMonitor},
+{id:'chat',s:4,t:'m',n:['Asistente virtual IA','AI assistant'],f:vChat},
+{id:'risk',s:4,t:'w',n:['Motor de riesgo IA','AI risk engine'],f:vRisk},
+{id:'i18n',s:5,t:'m',n:['Idioma y perfil por rol','Language & role UI'],f:vI18n},
+];
+const SP=[['Arquitectura y seguridad','Sem. 1–2','Infra: BD central y arquitectura multiplataforma (sin pantalla)'],['Operación móvil y sync','Sem. 3–4',''],['Centro de control IoT','Sem. 5–6',''],['IA y MVP','Sem. 7–8',''],['Idioma y roles','Sem. 9–10','']];
+
+function app(){
+ let nav='';
+ SP.forEach((sp,i)=>{
+  const s=i+1;
+  nav+=`<div class="sp">Sprint ${s} · ${sp[1]}<br><small>${sp[0]}</small>${sp[2]?'<br><small>'+sp[2]+'</small>':''}</div>`;
+  MODS.filter(m=>m.s===s).forEach(m=>{
+   nav+=`<button class="${S.mod===m.id?'on':''}" onclick="show('${m.id}')">${m.n[S.lang==='en'?1:0]} <i>${m.t==='m'?'Móvil':'Web'}</i></button>`;
+  });
+ });
+ const m=MODS.find(x=>x.id===S.mod);
+ const body=m.f();
+ const frame=m.t==='m'
+  ?`<div class="phone"><div class="notch"></div><div class="scr">${body}</div></div>`
+  :`<div class="browser"><div class="bar">flotatrans.app / ${m.id}</div><div class="page">${body}</div></div>`;
+ $('app').innerHTML=`<header><span><b>FlotaTrans S.A.</b> · Prototipo MVP interactivo (escala de grises, datos simulados)</span>
+ <select onchange="S.lang=this.value;app()"><option value="es" ${S.lang==='es'?'selected':''}>ES</option><option value="en" ${S.lang==='en'?'selected':''}>EN</option></select></header>
+ <div class="wrap"><aside>${nav}</aside><main>${frame}</main></div>`;
+}
+app();
+</script>
+</body>
+</html>
